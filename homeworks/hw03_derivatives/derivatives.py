@@ -1,6 +1,9 @@
 import numpy as np
 
 
+import numpy as np
+
+
 class LossAndDerivatives:
     @staticmethod
     def mse(X, Y, w):
@@ -33,7 +36,8 @@ class LossAndDerivatives:
         """
 
         # YOUR CODE HERE    
-        return 
+        N = np.shape(X)[0]
+        return np.mean(np.abs(X.dot(w) - Y))
 
     @staticmethod
     def l2_reg(w):
@@ -47,7 +51,7 @@ class LossAndDerivatives:
         """
         
         # YOUR CODE HERE
-        return 
+        return np.sum(w**2)
 
     @staticmethod
     def l1_reg(w):
@@ -61,7 +65,7 @@ class LossAndDerivatives:
         """
 
         # YOUR CODE HERE
-        return 
+        return np.sum(np.abs(w))
 
     @staticmethod
     def no_reg(w):
@@ -87,7 +91,8 @@ class LossAndDerivatives:
         """
 
         # YOUR CODE HERE
-        return 
+        N = np.shape(X)[0]
+        return 2 * X.T.dot(X.dot(w) - Y) / (N* np.shape(Y.T)[0])
 
     @staticmethod
     def mae_derivative(X, Y, w):
@@ -106,7 +111,8 @@ class LossAndDerivatives:
         """
 
         # YOUR CODE HERE
-        return 
+        N = np.shape(X)[0]
+        return X.T.dot(np.sign(X.dot(w) - Y)) / (N* np.shape(Y.T)[0])
 
     @staticmethod
     def l2_reg_derivative(w):
@@ -119,7 +125,7 @@ class LossAndDerivatives:
         """
 
         # YOUR CODE HERE
-        return 
+        return 2 * w
 
     @staticmethod
     def l1_reg_derivative(w):
@@ -133,7 +139,7 @@ class LossAndDerivatives:
         """
 
         # YOUR CODE HERE
-        return 
+        return np.sign(w) 
 
     @staticmethod
     def no_reg_derivative(w):
@@ -141,4 +147,6 @@ class LossAndDerivatives:
         Simply ignores the derivative
         """
         return np.zeros_like(w)
+
+
 

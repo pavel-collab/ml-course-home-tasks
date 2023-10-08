@@ -75,6 +75,13 @@ class KNearestNeighbor:
                 # not use a loop over dimension, nor use np.linalg.norm().          #
                 #####################################################################
                 # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+                
+                # посчитаем вектор который является разницой 
+                # векторов тестовой и тренировочной точек
+                d_vec = X[i] - self.X_train[j]
+                # используем скалярное произведение вектора самого на себя, 
+                # чтобы вычислить его длину
+                dists[i][j] = np.sqrt(np.dot(d_vec, d_vec))
 
                 # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
@@ -97,6 +104,16 @@ class KNearestNeighbor:
             # Do not use np.linalg.norm().                                        #
             #######################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+
+            # построим матрицу; каждая столбец матрицы -- 
+            # разница между тренировочной точкой и iй тестовой точкой 
+            d_vecs = self.X_train - X[i]
+            # возведем каждую компоненту матрицы в квадрат, таким образом,
+            # каждый компонент столбца есть (xi - yi)^2
+            d_vecs2 = d_vecs**2
+            # суммируя компоненты каждого столбца и вычисляя кв. корень 
+            # получаем строку с расстояниями от iй тестовой точки до каждой тренировочной
+            dists[i] = np.sqrt(sum(d_vecs2.T))
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         return dists
@@ -126,8 +143,30 @@ class KNearestNeighbor:
         #########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        # чтобы получить матрицу расстояний между тестовыми и тренировочными точками
+        # используем теорему косинусов
+        # x^2 = a^2 + b^2 - 2 (a, b)
+        # где 
+        # a^2 -- квадрат модуля вектора тренировочной точки
+        # b^2 -- квадрат модуля вектора тестовой точки
+        # (a, b) -- скалярное произведение векторов
+
+        #! NOTE sum складывает элементы по столбцам, а не по строкам
+        '''
+        NOTE: по какой-то дурацкой причине numpy не умеет складывать столбцы,
+        только строки. Если хочешь сложить столбец с матрицей -- будь добр, транспонируй столбец 
+        в строку. А поскольку ихменился порядок размерности, матрицу тоже надо транспонировать.
+        А так как ответ долже быть определенной размерности, то в конце полученный ответ надо
+        транспонировать еще раз.
+        '''
+        a2 = sum((self.X_train**2).T)
+        b2 = sum((X**2).T)    
+
+        ab = np.dot(self.X_train, X.T)
+        dists = np.sqrt((a2 - (2*ab).T).T + b2.T)
+
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-        return dists
+        return dists.T
 
     def predict_labels(self, dists, k=1):
         """
@@ -156,6 +195,16 @@ class KNearestNeighbor:
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+            ind = np.argsort(dists)
+            closest_y = np.zeros((num_test, k))
+
+            for i in range(num_test):
+                idxes = ind[i][:k]
+                closest_y[i] = np.array([self.y_train[j] for j in idxes])
+
+
+            closest_y = closest_y.astype('int32', copy=False)
+
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
             #########################################################################
             # TODO:                                                                 #
@@ -166,6 +215,11 @@ class KNearestNeighbor:
             #########################################################################
             # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+            for i in range(num_test):
+                closest_y_class = np.argmax(np.bincount(closest_y[i]))
+                closest_y_class_idx = list(closest_y[i]).index(closest_y_class)
+
+                y_pred[i] = closest_y[i][closest_y_class_idx]
 
             # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
