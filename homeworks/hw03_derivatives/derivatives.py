@@ -1,9 +1,5 @@
 import numpy as np
 
-
-import numpy as np
-
-
 class LossAndDerivatives:
     @staticmethod
     def mse(X, Y, w):
@@ -92,7 +88,12 @@ class LossAndDerivatives:
 
         # YOUR CODE HERE
         N = np.shape(X)[0]
-        return 2 * X.T.dot(X.dot(w) - Y) / (N* np.shape(Y.T)[0])
+        if np.ndim(Y) > 1:
+            sz = np.shape(Y)[1]
+        else:
+            sz = 1
+
+        return 2 * X.T.dot(X.dot(w) - Y) / (N * sz)
 
     @staticmethod
     def mae_derivative(X, Y, w):
@@ -112,7 +113,12 @@ class LossAndDerivatives:
 
         # YOUR CODE HERE
         N = np.shape(X)[0]
-        return X.T.dot(np.sign(X.dot(w) - Y)) / (N* np.shape(Y.T)[0])
+        if np.ndim(Y) > 1:
+            sz = np.shape(Y)[1]
+        else:
+            sz = 1
+
+        return X.T.dot(np.sign(X.dot(w) - Y)) / (N * sz)
 
     @staticmethod
     def l2_reg_derivative(w):
