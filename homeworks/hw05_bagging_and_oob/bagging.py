@@ -1,5 +1,7 @@
 import numpy as np
 
+import random
+
 class SimplifiedBaggingRegressor:
     def __init__(self, num_bags, oob=False):
         self.num_bags = num_bags
@@ -13,6 +15,10 @@ class SimplifiedBaggingRegressor:
         data_length = len(data)
         for bag in range(self.num_bags):
             # Your Code Here
+            # набор всевозможных индексов объектов
+            possible_indexes = list(range(data_length))
+            # генерируем наборы случайных индексов
+            self.indices_list.append([random.choice(possible_indexes) for  _ in range(data_length)])
         
     def fit(self, model_constructor, data, target):
         '''
@@ -32,7 +38,9 @@ class SimplifiedBaggingRegressor:
         self.models_list = []
         for bag in range(self.num_bags):
             model = model_constructor()
-            data_bag, target_bag = # Your Code Here
+            # Для каждой модели формируем выборки объектов
+            # выбираем объекты с индексами в соответствующем indices_list
+            data_bag, target_bag = [data[idx] for idx in self.indices_list[bag]], [target[idx] for idx in self.indices_list[bag]] # Your Code Here
             self.models_list.append(model.fit(data_bag, target_bag)) # store fitted models here
         if self.oob:
             self.data = data
@@ -43,6 +51,14 @@ class SimplifiedBaggingRegressor:
         Get average prediction for every object from passed dataset
         '''
         # Your code here
+        prediction = np.zeros(len(self.data))
+        for idx, obj in enumerate(self.data):
+            # Пробегаем по всем объектам исходной выборки. 
+            # Затем пробегаемся по всем моделям и смотрим, какую метку для данного объекта (obj) предсказывает каждая модель.
+            object_prediction_list = [model.predict([obj]) for model in self.models_list]
+            # Сохраняем для данного объекта предсказания всех моделей. Итоговое предсказание для данного объекта -- среднее от предсказаний всех моделей.
+            prediction[idx] = np.mean(object_prediction_list)
+        return prediction
     
     def _get_oob_predictions_from_every_model(self):
         '''
@@ -51,6 +67,14 @@ class SimplifiedBaggingRegressor:
         '''
         list_of_predictions_lists = [[] for _ in range(len(self.data))]
         # Your Code Here
+        for i in range(len(self.data)):
+            # Пробегаем по всем объектам исходной выборки. Для выбранного объекта пробегаем по всем бэгам.
+            for idx, bag in enumerate(self.indices_list):
+                # если в текущем бэге данного объекта нет, значит соответствующая можель на нем не обучалась.
+                # Делаем предсказание для этого объекта на модели соответсвуюзего бэга.
+                if i not in bag:
+                    list_of_predictions_lists[i].append(self.models_list[idx].predict( [self.data[i]] ).item())
+        # Таким образом, для каждого объекта мы получаем множество предсказаний тех моделей, которые его не видели.
         
         self.list_of_predictions_lists = np.array(list_of_predictions_lists, dtype=object)
     
@@ -60,7 +84,12 @@ class SimplifiedBaggingRegressor:
         If object has been used in all bags on training phase, return None instead of prediction
         '''
         self._get_oob_predictions_from_every_model()
-        self.oob_predictions = # Your Code Here
+        # Таким образом, для каждого объекта мы получаем множество предсказаний тех моделей, которые его не видели.
+        # Теперь для каждого объекта усредняем данные предсказания, получая, таким образом, среднее предсказание.
+        #! В идеальном мире, для каждого объекта найдется такая модель, которая на нем не обучалась.
+        #! Но, на практике, у существуют объекты, которые попали в тренировочный сет КАЖОЙ модели.
+        #! Для таких объектов список предсказаний на этом моменте программы будет пуст. Усреднение от пустого списка дает NaN.
+        self.oob_predictions = [np.mean(np.array(pred)) for pred in self.list_of_predictions_lists] # Your Code Here
         
         
     def OOB_score(self):
@@ -68,4 +97,8 @@ class SimplifiedBaggingRegressor:
         Compute mean square error for all objects, which have at least one prediction
         '''
         self._get_averaged_oob_predictions()
-        return # Your Code Here
+        # Для каждого объекта мы получили среднее предсказание от всех моделей. 
+        # Теперь, поскольку мы знаем реальные метки этих объектов, просто посчитаем ошибку.
+        #! Поскольку при усреднении предсказаний для каждого объекта были объекты, которые попали в обучающие выборки всех моделей
+        #! в self.oob_predictions могут быть элементы NaN. Эти элементы не учитываются при усреднении, поэтому в генератор закладываем if-фильтр.
+        return np.mean([item for item in (self.target - self.oob_predictions)**2 if not np.isnan(item)]) # Your Code Here
