@@ -3,9 +3,8 @@ import torch.nn as nn
 import torch.optim as optim
 
 import torchtext
-from torchtext.datasets import TranslationDataset, Multi30k
-from torchtext.data import Field, BucketIterator
-
+from torchtext.legacy.datasets import TranslationDataset, Multi30k
+from torchtext.legacy.data import Field, BucketIterator
 import random
 import math
 import time
@@ -19,7 +18,6 @@ class Encoder(nn.Module):
         self.emb_dim = emb_dim
         self.hid_dim = hid_dim
         self.n_layers = n_layers
-#         self.dropout = dropout
         
         self.embedding = nn.Embedding(
             num_embeddings=input_dim,
@@ -150,7 +148,8 @@ class Seq2Seq(nn.Module):
         assert encoder.n_layers == decoder.n_layers, \
             "Encoder and decoder must have equal number of layers!"
         
-    def forward(self, src, trg, teacher_forcing_ratio = 0.5):
+    #! The teacher forcing ration represents -- how often we will give the rnn the right answer insted of predicting context
+    def forward(self, src, trg, teacher_forcing_ratio = 0.5): #TODO: try to change teacher_forcing_ratio
         
         #src = [src sent len, batch size]
         #trg = [trg sent len, batch size]
@@ -173,7 +172,7 @@ class Seq2Seq(nn.Module):
         
         for t in range(1, max_len):
             
-            output, hidden, cell = self.decoder(input, hidden, cell)
+            output, hidden, cell = self.decoder(input, hidden, cell) #! the output dimention is the same to the input dimention, cz we want to translate the sequense of the words to the same length
             outputs[t] = output
             teacher_force = random.random() < teacher_forcing_ratio
             top1 = output.max(1)[1]

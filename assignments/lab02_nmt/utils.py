@@ -1,3 +1,4 @@
+import math
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
@@ -31,3 +32,20 @@ def generate_translation(src, trg, model, TRG_vocab):
     print('Original: {}'.format(' '.join(original)))
     print('Generated: {}'.format(' '.join(generated)))
     print()
+
+def write_model_title_log(filename: str, model_info: str):
+    log_file = open(filename, 'a')
+    log_file.write(model_info)
+    log_file.close()
+
+def write_model_train_log(filename: str, epoch_num, epoch_time: list, train_loss, valid_loss):
+    epoch_mins = epoch_time[0]
+    epoch_secs = epoch_time[1]
+
+    log_file = open(filename, 'a')
+
+    log_file.write(f'Epoch: {epoch_num+1:02} | Time: {epoch_mins}m {epoch_secs}s\n')
+    log_file.write(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {math.exp(train_loss):7.3f}\n')
+    log_file.write(f'\tVal. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}\n')
+
+    log_file.close()
