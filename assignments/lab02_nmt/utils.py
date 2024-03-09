@@ -1,4 +1,7 @@
 import math
+import torch
+from IPython.display import clear_output
+import matplotlib.pyplot as plt
 
 def flatten(l):
     return [item for sublist in l for item in sublist]
@@ -49,3 +52,92 @@ def write_model_train_log(filename: str, epoch_num, epoch_time: list, train_loss
     log_file.write(f'\tVal. Loss: {valid_loss:.3f} |  Val. PPL: {math.exp(valid_loss):7.3f}\n')
 
     log_file.close()
+
+def train(model, iterator, optimizer, criterion, clip, train_history=None, valid_history=None):
+    model.train()
+
+    epoch_loss = 0
+    history = []
+    for i, batch in enumerate(iterator):
+        #! import source and dst texts from batch for traning
+        src = batch.src
+        trg = batch.trg
+
+        optimizer.zero_grad()
+
+        #! get the output with model (outout is a vector)
+        output = model(src, trg)
+
+        #trg = [trg sent len, batch size]
+        #output = [trg sent len, batch size, output dim]
+
+        #! by this action ([1:]) we cut the <sos> token and convert the output from the tensor to the vector
+        output = output[1:].view(-1, output.shape[-1])
+        trg = trg[1:].view(-1)
+
+        #trg = [(trg sent len - 1) * batch size]
+        #output = [(trg sent len - 1) * batch size, output dim]
+
+        loss = criterion(output, trg)
+
+        loss.backward()
+
+        # Let's clip the gradient
+        #! it's done to prevent limitless grouth of the gradient
+        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+
+        optimizer.step()
+
+        epoch_loss += loss.item()
+
+        history.append(loss.cpu().data.numpy())
+        if (i+1)%10==0:
+            fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(12, 8))
+
+            clear_output(True)
+            ax[0].plot(history, label='train loss')
+            ax[0].set_xlabel('Batch')
+            ax[0].set_title('Train loss')
+            if train_history is not None:
+                ax[1].plot(train_history, label='general train history')
+                ax[1].set_xlabel('Epoch')
+            if valid_history is not None:
+                ax[1].plot(valid_history, label='general valid history')
+            plt.legend()
+
+            plt.show()
+
+
+    return epoch_loss / len(iterator)
+
+def evaluate(model, iterator, criterion):
+    #! switch the model to the evaluate mode
+    model.eval()
+
+    epoch_loss = 0
+
+    history = []
+    #! do a predictio without calculating gradients
+    with torch.no_grad():
+
+        for i, batch in enumerate(iterator):
+
+            src = batch.src
+            trg = batch.trg
+            #! give the prediction of the input, using the model
+            output = model(src, trg, 0) #turn off teacher forcing
+
+            #trg = [trg sent len, batch size]
+            #output = [trg sent len, batch size, output dim]
+
+            output = output[1:].view(-1, output.shape[-1])
+            trg = trg[1:].view(-1)
+
+            #trg = [(trg sent len - 1) * batch size]
+            #output = [(trg sent len - 1) * batch size, output dim]
+
+            loss = criterion(output, trg)
+
+            epoch_loss += loss.item()
+
+    return epoch_loss / len(iterator)
